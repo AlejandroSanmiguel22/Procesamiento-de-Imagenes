@@ -3,7 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 
-//@author aleja
+//@author grupo Procesamiento de imagenes
 import ij.*;
 import ij.process.*;
 import ij.gui.*;
