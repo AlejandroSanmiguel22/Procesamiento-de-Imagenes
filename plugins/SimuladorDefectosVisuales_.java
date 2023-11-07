@@ -24,7 +24,7 @@ public class SimuladorDefectosVisuales_ implements PlugInFilter {
     @Override
     public void run(ImageProcessor procesador) {
         GenericDialog dialog = new GenericDialog("Simulador de Defectos Visuales");
-        String[] opciones = {"Miopía", "Hipermetropía", "Astigmatismo", "Cataratas", "Glaucoma", "Degeneración macular", "Daltonismo"};
+        String[] opciones = {"Miopía", "Hipermetropía", "Astigmatismo", "Cataratas", "Daltonismo"};
         dialog.addChoice("Defecto visual:", opciones, opciones[0]);
         dialog.addSlider("Severidad:", 0, 100, 50);
         dialog.showDialog();
@@ -65,7 +65,12 @@ public class SimuladorDefectosVisuales_ implements PlugInFilter {
         IJ.log("Defecto seleccionado: " + defectoSeleccionado);
         IJ.log("Severidad: " + severidad);
     }
+    
+    
+    //****************************************************************************************//
 
+    
+     //Cataratas valor 50
     private ImageProcessor simularCataratas(ImageProcessor original) {
         // Crear una copia del procesador de imagen original para no modificar la imagen original
         ImageProcessor copia = original.duplicate();
@@ -86,7 +91,10 @@ public class SimuladorDefectosVisuales_ implements PlugInFilter {
         return copia;
     }
 
+    
     //****************************************************************************************//
+    
+    
     //Hipermetropía valor 12
     private ImageProcessor simularHipermetropia(ImageProcessor original, double severidad, double radioMaximo) {
         int width = original.getWidth();
