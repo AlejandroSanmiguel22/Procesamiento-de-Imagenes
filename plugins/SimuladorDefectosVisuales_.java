@@ -8,6 +8,11 @@ import ij.*;
 import ij.process.*;
 import ij.gui.*;
 import ij.plugin.filter.PlugInFilter;
+import ij.process.ImageProcessor;
+import ij.process.Blitter;
+import ij.process.ImageStatistics;
+import ij.process.TypeConverter;
+import ij.plugin.ContrastEnhancer;
 
 public class SimuladorDefectosVisuales_ implements PlugInFilter {
 
@@ -30,30 +35,60 @@ public class SimuladorDefectosVisuales_ implements PlugInFilter {
 
         String defectoSeleccionado = dialog.getNextChoice();
         double severidad = dialog.getNextNumber();
+        double radioMaximo = Math.min(procesador.getWidth(), procesador.getHeight()) / 2.0 * (severidad / 100.0);
 
-        if ("Miopía".equals(defectoSeleccionado)) {
-            procesador = simularMiopia(procesador, severidad);
-        } else if ("Astigmatismo".equals(defectoSeleccionado)) {
-            procesador = simularAstigmatismo(procesador, severidad);
-        } else if ("Hipermetropía".equals(defectoSeleccionado)) {
-            procesador = simularHipermetropia(procesador, severidad);
+        // Aplica el efecto basado en la selección del usuario
+        switch (defectoSeleccionado) {
+            case "Miopía":
+                procesador = simularMiopia(procesador, severidad);
+                break;
+            case "Astigmatismo":
+                procesador = simularAstigmatismo(procesador, severidad);
+                break;
+            case "Hipermetropía":
+                procesador = simularHipermetropia(procesador, severidad, radioMaximo);
+                break;
+            case "Cataratas":
+                procesador = simularCataratas(procesador); // Asumiendo que tienes un método simularCataratas
+                break;
+            // Añade aquí los casos para otros defectos visuales
+            // ...
+            default:
+                IJ.log("Defecto visual no reconocido.");
+                return;
         }
 
-        ImagePlus imagenActual = IJ.getImage();
-        imagenActual.setProcessor(procesador);
-        imagenActual.updateAndDraw();
+        // Actualiza la imagen con el procesador modificado
+        ImagePlus imagenActual = new ImagePlus("Simulación de " + defectoSeleccionado, procesador);
+        imagenActual.show();
 
         IJ.log("Defecto seleccionado: " + defectoSeleccionado);
         IJ.log("Severidad: " + severidad);
     }
 
+    private ImageProcessor simularCataratas(ImageProcessor original) {
+        // Crear una copia del procesador de imagen original para no modificar la imagen original
+        ImageProcessor copia = original.duplicate();
 
-    
-    
-    
-    
+        // Aplicar un desenfoque gaussiano para simular la visión borrosa
+        copia.blurGaussian(2.0);
+
+        // Reducir el contraste
+        ContrastEnhancer enhancer = new ContrastEnhancer();
+        enhancer.stretchHistogram(copia, 0.8); // Ajusta el valor según sea necesario para reducir el contraste
+
+        // Ajustar el brillo si es necesario
+        ImageStatistics stats = copia.getStatistics(); // Obtener estadísticas de la imagen
+        copia.add(40); // Aumentar los valores de los píxeles para incrementar el brillo
+        
+
+        // Devolver la imagen procesada
+        return copia;
+    }
+
+    //****************************************************************************************//
     //Hipermetropía valor 12
-    private ImageProcessor simularHipermetropia(ImageProcessor original, double severidad) {
+    private ImageProcessor simularHipermetropia(ImageProcessor original, double severidad, double radioMaximo) {
         int width = original.getWidth();
         int height = original.getHeight();
         ImageProcessor copia = original.duplicate();
@@ -66,30 +101,45 @@ public class SimuladorDefectosVisuales_ implements PlugInFilter {
                 double dx = x - centerX;
                 double dy = y - centerY;
                 double distance = Math.sqrt(dx * dx + dy * dy);
-                double blurRadius = severidad * distance / Math.max(width, height);
 
-                int sum = 0;
-                int count = 0;
+                // Aplicar desenfoque solo dentro de un radio máximo
+                if (distance < radioMaximo) {
+                    // El desenfoque aumenta con la distancia desde el centro hasta el radio máximo
+                    double normalizedDistance = distance / radioMaximo;
+                    double blurRadius = severidad * normalizedDistance;
 
-                for (int i = (int) -blurRadius; i <= blurRadius; i++) {
-                    for (int j = (int) -blurRadius; j <= blurRadius; j++) {
-                        int newX = x + i;
-                        int newY = y + j;
-                        if (newX >= 0 && newX < width && newY >= 0 && newY < height) {
-                            sum += original.getPixel(newX, newY);
-                            count++;
+                    int sumR = 0, sumG = 0, sumB = 0;
+                    int count = 0;
+
+                    for (int i = (int) -blurRadius; i <= blurRadius; i++) {
+                        for (int j = (int) -blurRadius; j <= blurRadius; j++) {
+                            int newX = x + i;
+                            int newY = y + j;
+                            if (newX >= 0 && newX < width && newY >= 0 && newY < height) {
+                                int pixel = original.getPixel(newX, newY);
+                                sumR += (pixel >> 16) & 0xff; // Rojo
+                                sumG += (pixel >> 8) & 0xff;  // Verde
+                                sumB += pixel & 0xff;         // Azul
+                                count++;
+                            }
                         }
                     }
-                }
 
-                int blurredValue = sum / count;
-                copia.putPixel(x, y, blurredValue);
+                    if (count > 0) {
+                        int meanR = sumR / count;
+                        int meanG = sumG / count;
+                        int meanB = sumB / count;
+                        int meanColor = (meanR << 16) | (meanG << 8) | meanB;
+                        copia.putPixel(x, y, meanColor);
+                    }
+                }
             }
         }
 
         return copia;
     }
 
+//****************************************************************************************//
     //Astigmatismo valor 50
     private ImageProcessor simularAstigmatismo(ImageProcessor original, double severidad) {
         double factorEscala = 0.05;  // Ajusta este valor según tus necesidades
@@ -100,6 +150,7 @@ public class SimuladorDefectosVisuales_ implements PlugInFilter {
         return copia;
     }
 
+    //****************************************************************************************//
     //Miopia Valor 12
     private ImageProcessor simularMiopia(ImageProcessor original, double severidad) {
         int width = original.getWidth();
