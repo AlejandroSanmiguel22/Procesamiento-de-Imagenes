@@ -296,43 +296,54 @@ public void run(ImageProcessor procesador) {
         return copia;
     }
 
-    private int[] getBlurredValueColor(ImageProcessor img, int x, int y, double radius) {
-        int count = 0;
-        int[] sum = new int[3];
+// Método para obtener el valor de desenfoque en color para un píxel específico.
+private int[] getBlurredValueColor(ImageProcessor img, int x, int y, double radius) {
+    int count = 0; // Contador para el número de píxeles incluidos en el cálculo.
+    int[] sum = new int[3]; // Arreglo para acumular la suma de los colores (RGB).
 
-        for (int i = (int) -radius; i <= radius; i++) {
-            for (int j = (int) -radius; j <= radius; j++) {
-                if (i * i + j * j <= radius * radius) {
-                    int[] pixelValue = new int[3];
-                    img.getPixel(x + i, y + j, pixelValue);
-                    for (int k = 0; k < sum.length; k++) {
-                        sum[k] += pixelValue[k];
-                    }
-                    count++;
+    // Recorrer un cuadrado alrededor del píxel basado en el radio de desenfoque.
+    for (int i = (int) -radius; i <= radius; i++) {
+        for (int j = (int) -radius; j <= radius; j++) {
+            // Incluir solo los píxeles dentro del círculo definido por el radio.
+            if (i * i + j * j <= radius * radius) {
+                int[] pixelValue = new int[3]; // Arreglo para almacenar el valor del píxel actual.
+                img.getPixel(x + i, y + j, pixelValue); // Obtener el valor del píxel.
+
+                // Acumular los valores de color para cada canal (R, G, B).
+                for (int k = 0; k < sum.length; k++) {
+                    sum[k] += pixelValue[k];
                 }
+                count++; // Incrementar el contador de píxeles.
             }
         }
-
-        for (int i = 0; i < sum.length; i++) {
-            sum[i] /= count;
-        }
-
-        return sum;
     }
 
-    private int getBlurredValueGray(ImageProcessor img, int x, int y, double radius) {
-        int count = 0;
-        int sum = 0;
+    // Calcular el promedio de color para cada canal.
+    for (int i = 0; i < sum.length; i++) {
+        sum[i] /= count;
+    }
 
-        for (int i = (int) -radius; i <= radius; i++) {
-            for (int j = (int) -radius; j <= radius; j++) {
-                if (i * i + j * j <= radius * radius) {
-                    sum += img.getPixel(x + i, y + j);
-                    count++;
-                }
+    return sum; // Devolver el valor promedio de color.
+}
+
+
+// Método para obtener el valor de desenfoque en escala de grises para un píxel específico.
+private int getBlurredValueGray(ImageProcessor img, int x, int y, double radius) {
+    int count = 0; // Contador para el número de píxeles incluidos en el cálculo.
+    int sum = 0; // Variable para acumular la suma de los valores de los píxeles.
+
+    // Recorrer un cuadrado alrededor del píxel basado en el radio de desenfoque.
+    for (int i = (int) -radius; i <= radius; i++) {
+        for (int j = (int) -radius; j <= radius; j++) {
+            // Incluir solo los píxeles dentro del círculo definido por el radio.
+            if (i * i + j * j <= radius * radius) {
+                sum += img.getPixel(x + i, y + j); // Sumar el valor del píxel.
+                count++; // Incrementar el contador de píxeles.
             }
         }
-
-        return sum / count;
     }
+
+    return sum / count; // Devolver el valor promedio en escala de grises.
+}
+
 }
